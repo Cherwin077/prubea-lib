@@ -138,6 +138,9 @@ jobs:
           grep -n "sysconf(_SC_OPEN_MAX)" ext/standard/php_fopen_wrapper.c
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
+          echo "===== DEBUG cast.c ====="
+          grep -n -A5 -B5 "stream_cookie_seeker" main/streams/cast.c || true
+          echo "========================"
           
           mkdir -p ../resultado
           cp libs/libphp.so ../resultado/libphp.so
