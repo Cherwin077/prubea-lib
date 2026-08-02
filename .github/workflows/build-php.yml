@@ -24,6 +24,7 @@ jobs:
 
       - name: Compilar Librerías C Necesarias (SQLite3 y Oniguruma para ARM32)
         run: |
+          set -e -x
           export NDK=$NDK_PATH
           export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           export TARGET=armv7a-linux-androideabi
@@ -42,16 +43,16 @@ jobs:
           wget -q https://www.sqlite.org/2024/sqlite-autoconf-3450100.tar.gz
           tar -xf sqlite-autoconf-3450100.tar.gz
           cd sqlite-autoconf-3450100
-          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC" || exit 1
-          make -j$(nproc) && make install || exit 1
+          ./configure --host=armv7a-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC"
+          make -j$(nproc) && make install
           cd ..
 
           echo "--- Compilando Oniguruma ---"
           wget -q https://github.com/kkos/oniguruma/releases/download/v6.9.9/onig-6.9.9.tar.gz
           tar -xf onig-6.9.9.tar.gz
           cd onig-6.9.9
-          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC" || exit 1
-          make -j$(nproc) && make install || exit 1
+          ./configure --host=armv7a-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC"
+          make -j$(nproc) && make install
           cd ..
 
       - name: Descargar Código Fuente de PHP 8.4
@@ -61,6 +62,7 @@ jobs:
 
       - name: Compilar libphp.so para 32 bits (armeabi-v7a)
         run: |
+          set -e -x
           export NDK=$NDK_PATH
           export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           export TARGET=armv7a-linux-androideabi
@@ -77,13 +79,15 @@ jobs:
           export PREFIX=$GITHUB_WORKSPACE/deps
           export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
           
+          # Variables para evitar fallos en compilación cruzada
+          export php_cv_cc_rpath=no
+          export ac_cv_func_memcmp_working=yes
+          
           cd php-8.4.0
           
-          # --without-phar evita intentar ejecutar binarios ARM32 en Linux x86_64
-          # -latomic proporciona soporte atómico para ARM de 32 bits en PHP 8.4
           ./configure \
             --build=x86_64-linux-gnu \
-            --host=arm-linux-androideabi \
+            --host=armv7a-linux-androideabi \
             --enable-embed=shared \
             --disable-cli \
             --disable-cgi \
@@ -105,7 +109,7 @@ jobs:
             --disable-opcache \
             CFLAGS="-O3 -fPIC -I$PREFIX/include" \
             LDFLAGS="-L$PREFIX/lib -latomic" \
-            LIBS="-latomic" || { echo "=== LOG DE ERROR ==="; tail -n 100 config.log; exit 1; }
+            LIBS="-latomic" || { echo "=== DETALLE DEL ERROR DE CONFIGURACION ==="; tail -n 120 config.log; exit 1; }
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
