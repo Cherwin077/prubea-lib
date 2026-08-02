@@ -137,6 +137,22 @@ jobs:
 
           grep -n "sysconf(_SC_OPEN_MAX)" ext/standard/php_fopen_wrapper.c
 
+          echo "================= MACROS ================="
+          
+          echo "COOKIE_SEEKER_USES_OFF64_T:"
+          grep -R "COOKIE_SEEKER_USES_OFF64_T" . || true
+          
+          echo "HAVE_FUNOPEN:"
+          grep -R "HAVE_FUNOPEN" main/php_config.h configure main ext Zend TSRM || true
+          
+          echo "HAVE_FOPENCOOKIE:"
+          grep -R "HAVE_FOPENCOOKIE" main/php_config.h configure main ext Zend TSRM || true
+          
+          echo "cookie_io_functions_t:"
+          grep -R "cookie_io_functions_t" /home/runner/work/prueba-lib/prueba-lib/android-ndk-r27b/sysroot/usr/include 2>/dev/null || true
+          
+          echo "=========================================="
+
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
           echo "===== DEBUG cast.c ====="
