@@ -117,6 +117,8 @@ jobs:
           sed -i 's/#define HAVE___RES_NSEARCH 1/\/\* #undef HAVE___RES_NSEARCH \*\//g' main/php_config.h
           sed -i 's/#define HAVE___DN_SKIPNAME 1/\/\* #undef HAVE___DN_SKIPNAME \*\//g' main/php_config.h
 
+          sed -i 's/getdtablesize()/sysconf(_SC_OPEN_MAX)/g' ext/standard/php_fopen_wrapper.c
+
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
           mkdir -p ../resultado
