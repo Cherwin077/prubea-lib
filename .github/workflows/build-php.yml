@@ -22,6 +22,38 @@ jobs:
           unzip -q android-ndk-r27b-linux.zip
           echo "NDK_PATH=$GITHUB_WORKSPACE/android-ndk-r27b" >> $GITHUB_ENV
 
+      - name: Compilar Librerías C Necesarias (SQLite3 y Oniguruma para ARM32)
+        run: |
+          export NDK=$NDK_PATH
+          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+          export TARGET=armv7a-linux-androideabi
+          export API=26
+          
+          export CC=$TOOLCHAIN/bin/${TARGET}${API}-clang
+          export CXX=$TOOLCHAIN/bin/${TARGET}${API}-clang++
+          export AR=$TOOLCHAIN/bin/llvm-ar
+          export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+          export LD=$TOOLCHAIN/bin/ld.lld
+          
+          export PREFIX=$GITHUB_WORKSPACE/deps
+          mkdir -p $PREFIX
+
+          echo "--- Compilando SQLite3 ---"
+          wget -q https://www.sqlite.org/2024/sqlite-autoconf-3450100.tar.gz
+          tar -xf sqlite-autoconf-3450100.tar.gz
+          cd sqlite-autoconf-3450100
+          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC"
+          make -j$(nproc) && make install
+          cd ..
+
+          echo "--- Compilando Oniguruma (para mbstring) ---"
+          wget -q https://github.com/kkos/oniguruma/releases/download/v6.9.9/onig-6.9.9.tar.gz
+          tar -xf onig-6.9.9.tar.gz
+          cd onig-6.9.9
+          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC"
+          make -j$(nproc) && make install
+          cd ..
+
       - name: Descargar Código Fuente de PHP 8.4
         run: |
           wget -q https://www.php.net/distributions/php-8.4.0.tar.gz
@@ -29,9 +61,6 @@ jobs:
 
       - name: Compilar libphp.so para 32 bits (armeabi-v7a)
         run: |
-          cd php-8.4.0
-          
-          # Variables de entorno para Android NDK r27
           export NDK=$NDK_PATH
           export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           export TARGET=armv7a-linux-androideabi
@@ -45,7 +74,11 @@ jobs:
           export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
           export STRIP=$TOOLCHAIN/bin/llvm-strip
           
-          # Configuración de PHP 8.4 para Android 32-bit
+          export PREFIX=$GITHUB_WORKSPACE/deps
+          export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+          
+          cd php-8.4.0
+          
           ./configure \
             --build=x86_64-linux-gnu \
             --host=arm-linux-androideabi \
@@ -61,17 +94,16 @@ jobs:
             --disable-xmlreader \
             --disable-xmlwriter \
             --without-iconv \
-            --disable-mbregex \
             --enable-mbstring \
             --enable-bcmath \
-            --with-pdo-sqlite \
-            --with-sqlite3 \
+            --with-sqlite3=$PREFIX \
+            --with-pdo-sqlite=$PREFIX \
             --disable-opcache \
-            CFLAGS="-O3 -fPIC" || { echo "=== LOG DE ERROR DE CONFIGURACION ==="; cat config.log; exit 1; }
+            CFLAGS="-O3 -fPIC -I$PREFIX/include" \
+            LDFLAGS="-L$PREFIX/lib" || { echo "=== LOG DE ERROR ==="; cat config.log; exit 1; }
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
-          # Guardar el binario generado
           mkdir -p ../resultado
           cp libs/libphp.so ../resultado/libphp.so
 
