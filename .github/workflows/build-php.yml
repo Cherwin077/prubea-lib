@@ -117,7 +117,17 @@ jobs:
           sed -i 's/#define HAVE___RES_NSEARCH 1/\/\* #undef HAVE___RES_NSEARCH \*\//g' main/php_config.h
           sed -i 's/#define HAVE___DN_SKIPNAME 1/\/\* #undef HAVE___DN_SKIPNAME \*\//g' main/php_config.h
 
+          # ==========================================================
+          # PARCHE ANDROID: getdtablesize() no existe en Bionic libc
+          # ==========================================================
+          echo "Aplicando parche Android para getdtablesize()..."
+
+          grep -q '#include <unistd.h>' ext/standard/php_fopen_wrapper.c || \
+          sed -i '/#include <fcntl.h>/a #include <unistd.h>' ext/standard/php_fopen_wrapper.c
+
           sed -i 's/getdtablesize()/sysconf(_SC_OPEN_MAX)/g' ext/standard/php_fopen_wrapper.c
+
+          grep -n "sysconf(_SC_OPEN_MAX)" ext/standard/php_fopen_wrapper.c
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
