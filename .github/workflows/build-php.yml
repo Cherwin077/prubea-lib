@@ -22,16 +22,16 @@ jobs:
           unzip -q android-ndk-r27b-linux.zip
           echo "NDK_PATH=$GITHUB_WORKSPACE/android-ndk-r27b" >> $GITHUB_ENV
 
-      - name: Descargar Código Fuente de PHP 8.2
+      - name: Descargar Código Fuente de PHP 8.4
         run: |
-          wget -q https://www.php.net/distributions/php-8.2.18.tar.gz
-          tar -xf php-8.2.18.tar.gz
+          wget -q https://www.php.net/distributions/php-8.4.0.tar.gz
+          tar -xf php-8.4.0.tar.gz
 
       - name: Compilar libphp.so para 32 bits (armeabi-v7a)
         run: |
-          cd php-8.2.18
+          cd php-8.4.0
           
-          # Variables de entorno para NDK r27
+          # Variables de entorno para Android NDK r27
           export NDK=$NDK_PATH
           export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           export TARGET=armv7a-linux-androideabi
@@ -43,24 +43,35 @@ jobs:
           export CXX=$TOOLCHAIN/bin/${TARGET}${API}-clang++
           export LD=$TOOLCHAIN/bin/ld.lld
           export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
           
-          # Configuración de PHP para Android de 32 bits (Embed + Extensiones)
+          # Configuración de PHP 8.4 para Android 32-bit
           ./configure \
+            --build=x86_64-linux-gnu \
             --host=arm-linux-androideabi \
             --enable-embed=shared \
             --disable-cli \
             --disable-cgi \
+            --disable-phpdbg \
+            --without-pear \
+            --disable-libxml \
+            --disable-dom \
+            --disable-simplexml \
+            --disable-xml \
+            --disable-xmlreader \
+            --disable-xmlwriter \
+            --without-iconv \
+            --disable-mbregex \
             --enable-mbstring \
             --enable-bcmath \
             --with-pdo-sqlite \
             --with-sqlite3 \
-            --without-iconv \
             --disable-opcache \
-            CFLAGS="-O3 -fPIC"
+            CFLAGS="-O3 -fPIC" || { echo "=== LOG DE ERROR DE CONFIGURACION ==="; cat config.log; exit 1; }
 
-          make -j$(nproc)
+          make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
-          # Guardar el archivo generado
+          # Guardar el binario generado
           mkdir -p ../resultado
           cp libs/libphp.so ../resultado/libphp.so
 
