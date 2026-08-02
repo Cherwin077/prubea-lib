@@ -1,0 +1,70 @@
+name: Build PHP 32-bit (armeabi-v7a)
+
+on:
+  workflow_dispatch: # Nos permite ejecutar la compilación con un clic cuando queramos
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Android NDK r27
+        uses: nsetup/setup-sdk@v1
+        with:
+          ndk-version: 'r27b'
+
+      - name: Instalar Dependencias del Sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf libtool bison re2c pkg-config wget unzip
+
+      - name: Descargar Código Fuente de PHP 8.2
+        run: |
+          wget https://www.php.net/distributions/php-8.2.18.tar.gz
+          tar -xvf php-8.2.18.tar.gz
+
+      - name: Compilar libphp.so para 32 bits (armeabi-v7a)
+        run: |
+          cd php-8.2.18
+          
+          # Variables de entorno para NDK r27
+          export NDK=$ANDROID_NDK_HOME
+          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+          export TARGET=armv7a-linux-androideabi
+          export API=26
+          
+          export AR=$TOOLCHAIN/bin/llvm-ar
+          export CC=$TOOLCHAIN/bin/${TARGET}${API}-clang
+          export AS=$CC
+          export CXX=$TOOLCHAIN/bin/${TARGET}${API}-clang++
+          export LD=$TOOLCHAIN/bin/ld.lld
+          export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+          
+          # Configuración de PHP para Android de 32 bits (Embed + Extensiones Laravel)
+          ./configure \
+            --host=arm-linux-androideabi \
+            --enable-embed=shared \
+            --disable-cli \
+            --disable-cgi \
+            --enable-mbstring \
+            --enable-bcmath \
+            --with-pdo-sqlite \
+            --with-sqlite3 \
+            --without-iconv \
+            --disable-opcache \
+            CFLAGS="-O3 -fPIC"
+
+          make -j$(nproc)
+          
+          # Guardar el archivo generado
+          mkdir -p ../resultado
+          cp libs/libphp.so ../resultado/libphp.so
+
+      - name: Subir Binario Compilado como Artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: libphp-32bit-armeabi-v7a
+          path: resultado/libphp.so
