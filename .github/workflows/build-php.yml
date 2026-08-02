@@ -93,8 +93,8 @@ jobs:
             --disable-cgi \
             --disable-phpdbg \
             --without-pear \
-            --without-phar \
-            --disable-libxml \
+            --disable-phar \
+            --without-libxml \
             --disable-dom \
             --disable-simplexml \
             --disable-xml \
