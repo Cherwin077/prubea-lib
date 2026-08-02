@@ -79,27 +79,9 @@ jobs:
           export PREFIX=$GITHUB_WORKSPACE/deps
           export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
           
-          # Variables de caché autoconf para evadir incompatibilidades con Android Bionic libc
-          export php_cv_cc_rpath=no
-          export ac_cv_func_memcmp_working=yes
-          
-          # Desactivar funciones de DNS de BIND (res_ninit no existe en Android Bionic API 26+)
-          export ac_cv_func_res_ninit=no
-          export ac_cv_func_res_nsearch=no
-          export ac_cv_func_res_search=no
-          export ac_cv_func_res_init=no
-          export ac_cv_func___res_nsearch=no
-          export ac_cv_func_dn_skipname=no
-          export ac_cv_func___dn_skipname=no
-          export ac_cv_func_dn_expand=no
-          export ac_cv_func___dn_expand=no
-          export ac_cv_func_res_ndestroy=no
-          export ac_cv_func___res_ndestroy=no
-          export ac_cv_func_dns_search=no
-          export ac_cv_func___dns_search=no
-          
           cd php-8.4.0
           
+          # Pasamos ac_cv_header_resolv_h=no directamente dentro de ./configure para forzar la desactivación de resolv.h
           ./configure \
             --build=x86_64-linux-gnu \
             --host=armv7a-linux-androideabi \
@@ -124,7 +106,23 @@ jobs:
             --disable-opcache \
             CFLAGS="-O3 -fPIC -I$PREFIX/include" \
             LDFLAGS="-L$PREFIX/lib -latomic" \
-            LIBS="-latomic" || { echo "=== DETALLE DEL ERROR DE CONFIGURACION ==="; tail -n 120 config.log; exit 1; }
+            LIBS="-latomic" \
+            php_cv_cc_rpath=no \
+            ac_cv_func_memcmp_working=yes \
+            ac_cv_header_resolv_h=no \
+            ac_cv_func_res_ninit=no \
+            ac_cv_func_res_nsearch=no \
+            ac_cv_func_res_search=no \
+            ac_cv_func_res_init=no \
+            ac_cv_func___res_nsearch=no \
+            ac_cv_func_dn_skipname=no \
+            ac_cv_func___dn_skipname=no \
+            ac_cv_func_dn_expand=no \
+            ac_cv_func___dn_expand=no \
+            ac_cv_func_res_ndestroy=no \
+            ac_cv_func___res_ndestroy=no \
+            ac_cv_func_dns_search=no \
+            ac_cv_func___dns_search=no || { echo "=== DETALLE DEL ERROR DE CONFIGURACION ==="; tail -n 120 config.log; exit 1; }
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
