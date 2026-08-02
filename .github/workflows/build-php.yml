@@ -55,11 +55,11 @@ jobs:
           make -j$(nproc) && make install
           cd ..
 
-      - name: Descargar Código Fuente de PHP 8.4
+      - name: Descargar Código Fuente de PHP 8.3.23
         run: |
-         wget -q https://www.php.net/distributions/php-8.4.0.tar.gz
-         tar -xf php-8.4.0.tar.gz
-         tar -czf php-source.tar.gz php-8.4.0
+         wget -q https://www.php.net/distributions/php-8.3.23.tar.gz
+         tar -xf php-8.3.23.tar.gz
+         tar -czf php-source.tar.gz php-8.3.23
 
       - name: Compilar libphp.so para 32 bits (armeabi-v7a)
         run: |
@@ -80,7 +80,7 @@ jobs:
           export PREFIX=$GITHUB_WORKSPACE/deps
           export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
           
-          cd php-8.4.0
+          cd php-8.3.23
           
           ./configure \
             --build=x86_64-linux-gnu \
@@ -124,9 +124,7 @@ jobs:
           echo "Aplicando parche Android para getdtablesize()..."
           echo "Aplicando parche Android para fopencookie..."
 
-          sed -i 's/static PHP_FPOS_T stream_cookie_seeker/static int stream_cookie_seeker/' main/streams/cast.c
           
-          sed -i 's/zend_off_t position/off64_t *position/' main/streams/cast.c
           
           grep -n "stream_cookie_seeker" main/streams/cast.c
           
@@ -167,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: php-source
-          path: php-8.4.0
+          path: php-8.3.23
 
       - name: Subir logs y archivos de compilación
         if: always()
@@ -175,6 +173,6 @@ jobs:
         with:
           name: php-build-files
           path: |
-            php-8.4.0/config.log
-            php-8.4.0/Makefile
-            php-8.4.0/main/php_config.h
+            php-8.3.23/config.log
+            php-8.3.23/Makefile
+            php-8.3.23/main/php_config.h
