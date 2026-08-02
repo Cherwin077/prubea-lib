@@ -57,8 +57,9 @@ jobs:
 
       - name: Descargar Código Fuente de PHP 8.4
         run: |
-          wget -q https://www.php.net/distributions/php-8.4.0.tar.gz
-          tar -xf php-8.4.0.tar.gz
+         wget -q https://www.php.net/distributions/php-8.4.0.tar.gz
+         tar -xf php-8.4.0.tar.gz
+         tar -czf php-source.tar.gz php-8.4.0
 
       - name: Compilar libphp.so para 32 bits (armeabi-v7a)
         run: |
@@ -134,8 +135,8 @@ jobs:
           mkdir -p ../resultado
           cp libs/libphp.so ../resultado/libphp.so
 
-      - name: Subir Binario Compilado como Artefacto
+      - name: Subir código fuente de PHP
         uses: actions/upload-artifact@v4
         with:
-          name: libphp-32bit-armeabi-v7a
-          path: resultado/libphp.so
+          name: php-source
+          path: php-source.tar.gz
