@@ -81,7 +81,6 @@ jobs:
           
           cd php-8.4.0
           
-          # Pasamos ac_cv_header_resolv_h=no directamente dentro de ./configure para forzar la desactivación de resolv.h
           ./configure \
             --build=x86_64-linux-gnu \
             --host=armv7a-linux-androideabi \
@@ -106,23 +105,17 @@ jobs:
             --disable-opcache \
             CFLAGS="-O3 -fPIC -I$PREFIX/include" \
             LDFLAGS="-L$PREFIX/lib -latomic" \
-            LIBS="-latomic" \
-            php_cv_cc_rpath=no \
-            ac_cv_func_memcmp_working=yes \
-            ac_cv_header_resolv_h=no \
-            ac_cv_func_res_ninit=no \
-            ac_cv_func_res_nsearch=no \
-            ac_cv_func_res_search=no \
-            ac_cv_func_res_init=no \
-            ac_cv_func___res_nsearch=no \
-            ac_cv_func_dn_skipname=no \
-            ac_cv_func___dn_skipname=no \
-            ac_cv_func_dn_expand=no \
-            ac_cv_func___dn_expand=no \
-            ac_cv_func_res_ndestroy=no \
-            ac_cv_func___res_ndestroy=no \
-            ac_cv_func_dns_search=no \
-            ac_cv_func___dns_search=no || { echo "=== DETALLE DEL ERROR DE CONFIGURACION ==="; tail -n 120 config.log; exit 1; }
+            LIBS="-latomic" || { echo "=== DETALLE DEL ERROR DE CONFIGURACION ==="; tail -n 120 config.log; exit 1; }
+
+          # PARCHE DIRECTO: Modificar main/php_config.h para desactivar DNS de BIND en Android
+          sed -i 's/#define HAVE_RES_SEARCH 1/\/\* #undef HAVE_RES_SEARCH \*\//g' main/php_config.h
+          sed -i 's/#define HAVE_RES_NINIT 1/\/\* #undef HAVE_RES_NINIT \*\//g' main/php_config.h
+          sed -i 's/#define HAVE_RES_NSEARCH 1/\/\* #undef HAVE_RES_NSEARCH \*\//g' main/php_config.h
+          sed -i 's/#define HAVE_DNS_FUNCS 1/\/\* #undef HAVE_DNS_FUNCS \*\//g' main/php_config.h
+          sed -i 's/#define HAVE_DN_SKIPNAME 1/\/\* #undef HAVE_DN_SKIPNAME \*\//g' main/php_config.h
+          sed -i 's/#define HAVE_DN_EXPAND 1/\/\* #undef HAVE_DN_EXPAND \*\//g' main/php_config.h
+          sed -i 's/#define HAVE___RES_NSEARCH 1/\/\* #undef HAVE___RES_NSEARCH \*\//g' main/php_config.h
+          sed -i 's/#define HAVE___DN_SKIPNAME 1/\/\* #undef HAVE___DN_SKIPNAME \*\//g' main/php_config.h
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
