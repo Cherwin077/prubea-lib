@@ -122,7 +122,14 @@ jobs:
           # PARCHE ANDROID: getdtablesize() no existe en Bionic libc
           # ==========================================================
           echo "Aplicando parche Android para getdtablesize()..."
+          echo "Aplicando parche Android para fopencookie..."
 
+          sed -i 's/static PHP_FPOS_T stream_cookie_seeker/static int stream_cookie_seeker/' main/streams/cast.c
+          
+          sed -i 's/zend_off_t position/off64_t *position/' main/streams/cast.c
+          
+          grep -n "stream_cookie_seeker" main/streams/cast.c
+          
           grep -q '#include <unistd.h>' ext/standard/php_fopen_wrapper.c || \
           sed -i '/#include <fcntl.h>/a #include <unistd.h>' ext/standard/php_fopen_wrapper.c
 
