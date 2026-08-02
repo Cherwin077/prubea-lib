@@ -42,16 +42,16 @@ jobs:
           wget -q https://www.sqlite.org/2024/sqlite-autoconf-3450100.tar.gz
           tar -xf sqlite-autoconf-3450100.tar.gz
           cd sqlite-autoconf-3450100
-          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC"
-          make -j$(nproc) && make install
+          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC" || exit 1
+          make -j$(nproc) && make install || exit 1
           cd ..
 
-          echo "--- Compilando Oniguruma (para mbstring) ---"
+          echo "--- Compilando Oniguruma ---"
           wget -q https://github.com/kkos/oniguruma/releases/download/v6.9.9/onig-6.9.9.tar.gz
           tar -xf onig-6.9.9.tar.gz
           cd onig-6.9.9
-          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC"
-          make -j$(nproc) && make install
+          ./configure --host=arm-linux-androideabi --prefix=$PREFIX --disable-shared --enable-static CFLAGS="-O3 -fPIC" || exit 1
+          make -j$(nproc) && make install || exit 1
           cd ..
 
       - name: Descargar Código Fuente de PHP 8.4
@@ -79,6 +79,8 @@ jobs:
           
           cd php-8.4.0
           
+          # --without-phar evita intentar ejecutar binarios ARM32 en Linux x86_64
+          # -latomic proporciona soporte atómico para ARM de 32 bits en PHP 8.4
           ./configure \
             --build=x86_64-linux-gnu \
             --host=arm-linux-androideabi \
@@ -87,6 +89,7 @@ jobs:
             --disable-cgi \
             --disable-phpdbg \
             --without-pear \
+            --without-phar \
             --disable-libxml \
             --disable-dom \
             --disable-simplexml \
@@ -94,13 +97,15 @@ jobs:
             --disable-xmlreader \
             --disable-xmlwriter \
             --without-iconv \
+            --disable-mbregex \
             --enable-mbstring \
             --enable-bcmath \
             --with-sqlite3=$PREFIX \
             --with-pdo-sqlite=$PREFIX \
             --disable-opcache \
             CFLAGS="-O3 -fPIC -I$PREFIX/include" \
-            LDFLAGS="-L$PREFIX/lib" || { echo "=== LOG DE ERROR ==="; cat config.log; exit 1; }
+            LDFLAGS="-L$PREFIX/lib -latomic" \
+            LIBS="-latomic" || { echo "=== LOG DE ERROR ==="; tail -n 100 config.log; exit 1; }
 
           make -j$(nproc) || { echo "=== ERROR EN MAKE ==="; exit 1; }
           
