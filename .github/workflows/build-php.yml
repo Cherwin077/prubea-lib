@@ -136,7 +136,18 @@ jobs:
           cp libs/libphp.so ../resultado/libphp.so
 
       - name: Subir código fuente de PHP
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: php-source
-          path: php-source.tar.gz
+          path: php-8.4.0
+
+      - name: Subir logs y archivos de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-build-files
+          path: |
+            php-8.4.0/config.log
+            php-8.4.0/Makefile
+            php-8.4.0/main/php_config.h
